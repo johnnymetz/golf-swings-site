@@ -1,72 +1,81 @@
 <template>
-  <div class="container">
-    <div>
-      <logo />
-      <h1 class="title">
-        golf-swings-site
-      </h1>
-      <h2 class="subtitle">
-        Vue.js app for golf swing images and videos
-      </h2>
-      <div class="links">
-        <a
-          href="https://nuxtjs.org/"
-          target="_blank"
-          class="button--green"
-        >
-          Documentation
-        </a>
-        <a
-          href="https://github.com/nuxt/nuxt.js"
-          target="_blank"
-          class="button--grey"
-        >
-          GitHub
-        </a>
-      </div>
-    </div>
-  </div>
+  <b-row v-show="loggedIn">
+    <b-col>
+      <div v-if="error" class="text-center mt-3">{{ this.error }}</div>
+      <GolfersList v-if="all_golfers && all_golfers.edges" :golfers="all_golfers.edges" />
+    </b-col>
+  </b-row>
 </template>
 
 <script>
-import Logo from '~/components/Logo.vue'
+import gql from 'graphql-tag'
+import GolfersList from '@/components/GolfersList.vue'
 
 export default {
+  name: 'home',
+  data() {
+    return {
+      loggedIn: false,
+      all_golfers: [],
+      error: null
+    }
+  },
   components: {
-    Logo
+    GolfersList
+  },
+  created() {
+    let loggedIn = false
+
+    const authUser = localStorage.getItem('authUser')
+    if (authUser == process.env.authUser) {
+      loggedIn = true
+    }
+
+    if (loggedIn) {
+      this.loggedIn = true
+    } else {
+      this.$router.push('/login')
+    }
+  },
+  apollo: {
+    all_golfers: {
+      query: gql`
+        query {
+          all_golfers {
+            edges {
+              node {
+                id
+                name
+                headshot {
+                  source
+                }
+                media_set {
+                  edges {
+                    node {
+                      id
+                      source
+                      description
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `,
+      error(err) {
+        this.error = err.message
+      }
+    }
   }
 }
 </script>
 
 <style>
-.container {
-  margin: 0 auto;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-}
-
-.title {
-  font-family: 'Quicksand', 'Source Sans Pro', -apple-system, BlinkMacSystemFont,
-    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  display: block;
-  font-weight: 300;
-  font-size: 100px;
-  color: #35495e;
-  letter-spacing: 1px;
-}
-
-.subtitle {
-  font-weight: 300;
-  font-size: 42px;
-  color: #526488;
-  word-spacing: 5px;
-  padding-bottom: 15px;
-}
-
-.links {
-  padding-top: 15px;
+.centered {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 </style>
